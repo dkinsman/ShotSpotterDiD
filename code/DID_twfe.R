@@ -115,7 +115,7 @@ df_comp %>%
   ggplot(aes(x = date, y = mean)) +
   geom_point(aes(color = call), position = position_dodge(0.1)) +
   geom_line(aes(color = call), position = position_dodge(0.1)) +
-  geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd, color = call), 
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se, color = call), 
                 alpha = 0.5, position = position_dodge(0.1))+
   # geom_vline(xintercept = 269, linetype = 'dashed', size = 1) +
   # geom_text(aes(x=264, y = 7, label="Treated Week"), angle = 90) +
@@ -153,7 +153,8 @@ ggsave('output/diff_trend_SvG.png', width = 3000, height = 2000,
        units = 'px')
 
 week_means = dfw_count %>% group_by(treat, week) %>% summarise(mean = mean(n, na.rm = T),
-                                                               se = sd(n, na.rm = T)/sqrt(length(n)))
+                                                               se = sd(n, na.rm = T)/sqrt(length(n)),
+                                                               sd = sd(n))
 week_means$treat = as.factor(week_means$treat)
 week_means = df_date2016(week_means)
 
@@ -162,6 +163,8 @@ week_means %>%
   ggplot(aes(x = date, y = mean)) +
   geom_point(aes(color = treat)) +
   geom_line(aes(color = treat)) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se, color = treat), 
+                alpha = 0.5, position = position_dodge(0.1)) +
   # geom_ribbon(aes(ymin = mean - se, ymax = mean + se), alpha = 0.3)+
   labs(title = "Trends for Treated and Control Groups",
        x = "Week",
