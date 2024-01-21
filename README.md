@@ -1,6 +1,6 @@
 # *Causal analysis of a gunshot detection system: Null effects of ShotSpotter in Detroit*
-## Dawson Kinsman, Hadi Chaaban, Divya Ramjee, Maimuna Majumder, Antonios M. Koumpias, Tian An Wong
----
+### Dawson Kinsman, Hadi Chaaban, Divya Ramjee, Maimuna Majumder, Antonios M. Koumpias, Tian An Wong
+
 We evaluate for the first time the impact of ShotSpotter technology in Detroit, Michigan, on shooting-related 911 calls for service and gun violence. We combine ShotSpotter geolocation information with data on 911 calls reporting gunshots as an indicator of gunshot incidents from 2018 to 2022 in weekly frequency. Using a Difference-in-Differences (DiD) design, we estimate the effect of ShotSpotter by comparing scout car areas (SCAs)-subdivisions of precincts to which Detroit Police Department officers can be assigned for patrol- where ShotSpotter was deployed to SCAs with no ShotSpotter deployment before and after its implementation in 2021. 
 To confirm the validity of the DiD design, we conduct event-study falsification tests that indicate the absence of any pre-treatment non-parallel trends in the evolution of reported gunshot incidents in SCAs with and without ShotSpotter, thereby, permitting a causal interpretation of our study estimates. %We determined that implementation of ShotSpotter technology generated to 2.06 (SE=0.75) more gunshot-related alerts relative to non-ShotSpotter SCAs, which is equivalent to a 109.6\% increase relative to the pre-ShotSpotter baseline number of 1.88 gunshot-related 911 calls. 
 Placebo tests of gunshot-related 911 calls illustrate no divergent trends between SCAs where ShotSpotter was deployed or not, further supporting the reliability of our study estimates. 
