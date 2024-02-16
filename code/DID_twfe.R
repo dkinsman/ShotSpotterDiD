@@ -6,6 +6,9 @@ library(xtable)
 library(ggplot2)
 library(stringr)
 library(tidyr)
+library(did)
+library(plm)
+library(lmtest)
 
 source('redline_ratio.R')
 
@@ -60,6 +63,7 @@ mod_twfe = feols(n~ i(time_to_treat, treat, ref = -1) |
                  data = dfw_count)
 
 tab = mod_twfe$coeftable
+mean(tab[134:nrow(tab),1])
 print(xtable(tab, digits = 3))
 
 png('output/TWFE_weeksNONSS.png', res = 300, width = 3000, height = 2000)
@@ -75,13 +79,37 @@ dfw_count[,'did'] = dfw_count$time * dfw_count$treat
 #         precinct + week,
 #       cluster = ~precinct,
 #       dfw_count)
-model_did = feols(n ~ did + time + treat, 
+model_did = feols(n ~ did + time + treat,
               cluster = ~precinct,
               dfw_count)
 summary(model_did)
 coefplot(model_did)
 did.coef = model_did$coefficients[['did']]
 
+panel <- pdata.frame(dfw_count, "sca")
+did.reg <- lm(n ~ time*treat, 
+               data = dfw_count)
+# summary(did.reg)
+# coeftest(did.reg, vcov = function(x) 
+#   vcovHC(x, cluster = "group", type = "HC1"))
+
+dfw_count[,'first.treat'] = ifelse(dfw_count[, 'treat'] == 1, 
+                                   wtreat, 0)
+agg = att_gt(yname = 'n', gname = 'first.treat', idname = 'sca', 
+             tname = 'week', xformla = ~1, data = dfw_count, panel = T, 
+             est_method = 'reg', clustervars = 'precinct')
+summary(agg)
+ggdid(agg)
+
+agg.simple = aggte(agg, type = "simple")
+summary(agg.simple)
+
+agg.dynamic = aggte(agg, type = 'dynamic')
+summary(agg.dynamic)
+ggdid(agg.dynamic)
+
+agg.group = aggte(agg, type = 'group')
+ggdid(agg.group)
 # Difference in means plot
 df_ss[,'call'] = 'ShotSpotter'
 df_911[,'call'] = '911 Call'
@@ -230,3 +258,15 @@ png('output/ddd_coefNONSS.png', res = 300, width = 3000, height = 2000)
 coefplot(model)
 dev.off()
 
+agg_red = att_gt(yname = 'n', gname = 'first.treat', idname = 'sca', 
+             tname = 'week', xformla = ~red_ratio, data = dfw_count, panel = T, 
+             est_method = 'reg', clustervars = 'precinct')
+summary(agg_red)
+ggdid(agg_red)
+
+agg_red.simple = aggte(agg_red, type = "simple")
+summary(agg_red.simple)
+
+agg_red.dynamic = aggte(agg_red, type = 'dynamic')
+summary(agg_red.dynamic)
+ggdid(agg_red.dynamic) + ggtitle('DID + red_ratio')
