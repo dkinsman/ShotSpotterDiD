@@ -1,3 +1,9 @@
 .DS_STORE
 .RData
 .Rhistory
+test/*
+code/unsaved/*
+code/911-calls-download.csv
+.git/objects/pack/pack-5dce50150e4b9a8e7ebbd4f08d7682973cfb6605.pack
+data/clean_updated_RMS.csv
+data/raw/rms_crime_incidents.csv

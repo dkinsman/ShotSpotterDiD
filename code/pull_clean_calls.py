@@ -6,11 +6,14 @@ import re
 def get_911_data():
     """ PULL FROM OPEN DATA PORTAL API TO PANDAS DF """
     # Takes about 4 mins to run
-    url = "https://services2.arcgis.com/qvkbeam7Wirps6zC/arcgis/rest/services/911_Calls_New/FeatureServer/0/query?where=category%20%3D%20'SHOT%20SPT'%20OR%20category%20%3D%20'SHOTS%20IP'%20OR%20category%20%3D%20'SHOTS%20JH'%20OR%20category%20%3D%20'SHOTSPT'&outFields=*&outSR=4326&f=json"
+    # url = "https://services2.arcgis.com/qvkbeam7Wirps6zC/arcgis/rest/services/911_Calls_New/FeatureServer/0/query?where=category%20%3D%20'SHOT%20SPT'%20OR%20category%20%3D%20'SHOTS%20IP'%20OR%20category%20%3D%20'SHOTS%20JH'%20OR%20category%20%3D%20'SHOTSPT'&outFields=*&outSR=4326&f=json"
+    url = "https://services2.arcgis.com/qvkbeam7Wirps6zC/arcgis/rest/services/Police_Serviced_911_Calls/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
+    # url = "https://services2.arcgis.com/qvkbeam7Wirps6zC/arcgis/rest/services/911_Calls_New/FeatureServer/0/query?where=category%20%3D%20'SHOT%20SPT'%20OR%20category%20%3D%20'SHOTS%20IP'%20OR%20category%20%3D%20'SHOTS%20JH'%20OR%20category%20%3D%20'SHOTSPT'&outFields=*&outSR=4326&f=json"
     df = pd.DataFrame()
     offset = 0
 
     while True:
+        print(offset)
         response = requests.get(url, params= {'resultOffset':offset})
         data = response.json().get('features')
         df = pd.concat([df, pd.json_normalize(data)], axis = 0, ignore_index= True)
@@ -22,7 +25,7 @@ def get_911_data():
     return df
 
 
-def clean_911(df, keep_shape = False):
+def clean_911(df:pd.DataFrame, keep_shape = False):
     # Rename columns
     df.columns = ['incident_id', 'agency', 'incident_address', 'zip_code', 'priority', 'callcode', 'calldescription', 'category', 'call_timestamp','precinct_sca', 'respondingunit', 'officerinitiated', 'intaketime','dispatchtime', 'traveltime', 'totalresponsetime', 'time_on_scene', 'totaltime', 'neighborhood', 'block_id', 'council_district', 'longitude', 'latitude', 'shape', 'ObjectId', 'X', 'Y']
 
@@ -50,18 +53,18 @@ def clean_911(df, keep_shape = False):
        'totaltime']
     df[time_features] = df[time_features].replace(',', '', regex=True).astype('float64')
 
-    df['sca']= [re.sub('[^0-9]','', str(x)).lstrip('0') for x in df.precinct_sca]
+    df['sca']= [re.sub('[^0-9]','', str(x)).lstrip('0') for x in df.sca]
     df['precinct'] = [x[:1] if x[:1] != '1' else x[:2] for x in df.sca]
     df = df[df.sca != '']
     df['sca'] = [x[:2] + '1' + x[2:] if (x == '121')| (x == '111') else x for x in df.sca]
     df['sca']= [x if ((len(x)==4) | ((len(x)==3) & (x[:1] != '1'))) else (x[:1] + '0' + x[1:] if len(x)==2 else x[:2] + '0' + x[2:]) for x in df.sca]
 
     df['date'] = df.call_timestamp.dt.strftime('%Y-%m-%d')
-    df['month'] = df.call_timestamp.dt.strftime('%Y-%m')
-    df['week'] = df.call_timestamp.dt.strftime('%Y-%U')
+    # df['month'] = df.call_timestamp.dt.strftime('%Y-%m')
+    # df['week'] = df.call_timestamp.dt.strftime('%Y-%U')
     df['year'] = df.call_timestamp.dt.strftime('%Y')
 
-    df.drop('precinct_sca', axis = 1, inplace = True)
+    # df.drop('precinct_sca', axis = 1, inplace = True)
 
     if keep_shape == True:
         df.to_csv('clean_updated_gunshots.csv', index = False)
@@ -69,3 +72,48 @@ def clean_911(df, keep_shape = False):
         df.drop(['shape', 'ObjectId', 'X', 'Y'], axis = 1, inplace = True)
         df.to_csv('clean_updated_gunshots.csv', index = False)
     return df
+
+def clean_RMS(df:pd.DataFrame, keep_shape = False):
+
+    # Drop duplicate entries
+    df.drop_duplicates(subset=['crime_id','report_number'], inplace=True)
+
+    df.crime_id = df.crime_id.astype('int64')
+    df.report_number = df.report_number.astype('int64')
+    df.zip_code = df.zip_code.astype('int64')
+    df.longitude = df.longitude.astype('float64')
+    df.latitude = df.latitude.astype('float64')
+
+    # time_features = ['intaketime',
+    #    'dispatchtime', 'traveltime', 'totalresponsetime', 'time_on_scene',
+    #    'totaltime']
+    # df[time_features] = df[time_features].replace(',', '', regex=True).astype('float64')
+
+    df = df[~df['precinct'].isin(["0","00", "0W", "HP"])]
+
+    # df['sca']= [re.sub('[^0-9]','', str(x)).lstrip('0') for x in df.scout_car_area]
+    # df['precinct'] = [x[:1] if x[:1] != '1' else x[:2] for x in df.precinct]
+    # df = df[df.sca != '']
+    # df['sca'] = [x[:2] + '1' + x[2:] if (x == '121')| (x == '111') else x for x in df.sca]
+    # df['sca']= [x if ((len(x)==4) | ((len(x)==3) & (x[:1] != '1'))) else (x[:1] + '0' + x[1:] if len(x)==2 else x[:2] + '0' + x[2:]) for x in df.sca]
+
+    df['date'] = pd.to_datetime(df.incident_timestamp).dt.date()
+    # df['month'] = df.call_timestamp.dt.strftime('%Y-%m')
+    # df['week'] = df.call_timestamp.dt.strftime('%Y-%U')
+    # df['year'] = df.incident_timestamp.dt.strftime('%Y')
+
+    # df.drop('precinct_sca', axis = 1, inplace = True)
+
+    if keep_shape == True:
+        df.to_csv('../clean_updated_RMS.csv', index = False)
+    else:
+        df.drop(['geom', 'oid'], axis = 1, inplace = True)
+        df.to_csv('../clean_updated_RMS.csv', index = False)
+    return df
+
+if __name__ == '__main__':
+    # df = pd.read_csv('../rms_crime_incidents.csv')
+    # clean_RMS(df)
+    df = get_911_data()
+    # print(df)
+    df.to_csv('get911calls_new.csv', index=False)
